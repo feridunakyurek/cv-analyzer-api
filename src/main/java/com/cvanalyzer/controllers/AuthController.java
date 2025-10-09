@@ -2,9 +2,13 @@ package com.cvanalyzer.controllers;
 
 import com.cvanalyzer.dtos.AuthRequest;
 import com.cvanalyzer.dtos.JwtResponse;
+import com.cvanalyzer.dtos.UserRegistrationRequest;
 import com.cvanalyzer.entities.User;
+import com.cvanalyzer.exceptions.UserAlreadyExistsException;
 import com.cvanalyzer.security.JwtUtil;
 import com.cvanalyzer.services.UserService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +30,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User user) {
-        boolean isRegistered = userService.registerUser(user);
-        if (isRegistered) {
-            return ResponseEntity.ok("User registered successfully");
-        } else {
-            return ResponseEntity.badRequest().body("User already exists");
+    public ResponseEntity<Void> register(@RequestBody @Valid UserRegistrationRequest request) {
+        try {
+            userService.registerUser(request);
+            return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 Created
+        } catch (UserAlreadyExistsException ex) {
+            throw ex; // ControllerAdvice'e fırlatır
         }
     }
 

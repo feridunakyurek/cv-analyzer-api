@@ -30,4 +30,9 @@ public class Evaluation {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "cv_id", nullable = false)
+    private CvUpload cvUpload;
+
 }

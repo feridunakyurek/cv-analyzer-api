@@ -1,8 +1,11 @@
 package com.cvanalyzer.services;
 
+import com.cvanalyzer.dtos.UserRegistrationRequest;
 import com.cvanalyzer.entities.Role;
 import com.cvanalyzer.entities.User;
+import com.cvanalyzer.exceptions.UserAlreadyExistsException;
 import com.cvanalyzer.repos.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,17 +43,24 @@ public class UserService implements UserDetailsService {
     }
 
 
-    public boolean registerUser(User user) {
-        if (userRepository.existsByEmail(user.getEmail()))
-            throw new RuntimeException("Email already exists!");
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(Role.USER);
+    public boolean registerUser(@Valid UserRegistrationRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            // Özel exception kullanarak daha iyi hata yönetimi sağlayın
+            throw new UserAlreadyExistsException("Email already exists!");
+        }
 
-        System.out.println(user.getPassword());
-        userRepository.save(user);
+        User newUser = new User();
+
+        newUser.setEmail(request.getEmail());
+
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        newUser.setRole(Role.USER);
+
+        userRepository.save(newUser);
+
         return true;
-
     }
 
     public User registerAdmin(User user) {

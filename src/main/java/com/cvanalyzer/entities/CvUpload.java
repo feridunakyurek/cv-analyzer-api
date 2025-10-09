@@ -34,4 +34,6 @@ public class CvUpload {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    public String resumeText;
 }

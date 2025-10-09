@@ -4,6 +4,7 @@ import com.cvanalyzer.entities.Evaluation;
 import com.cvanalyzer.services.EvaluationService;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -17,9 +18,9 @@ public class EvaluationController {
         this.service = service;
     }
 
-    @PostMapping
-    public Evaluation evaluate(@RequestBody Evaluation eval) {
-        return service.analyzeAndSave(eval);
+    @PostMapping("/analyze/{cvId}")
+    public Evaluation analyzeCv(@PathVariable Long cvId) throws IOException {
+        return service.analyzeCv(cvId);
     }
 
     @GetMapping("/{userId}")

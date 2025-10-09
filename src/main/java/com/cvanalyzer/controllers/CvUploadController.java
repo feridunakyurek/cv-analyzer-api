@@ -3,12 +3,16 @@ package com.cvanalyzer.controllers;
 import com.cvanalyzer.entities.CvUpload;
 import com.cvanalyzer.entities.User;
 import com.cvanalyzer.exceptions.FileStorageException;
+import com.cvanalyzer.exceptions.FileValidationException;
+import com.cvanalyzer.exceptions.UserNotFoundException;
 import com.cvanalyzer.repos.CvUploadRepository;
 import com.cvanalyzer.repos.UserRepository;
-import jakarta.annotation.Resource;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,12 +23,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/cv")
 public class CvUploadController {
 
-    private final String UPLOAD_DIR = "uploads/";
+    private final Path uploadPath = Paths.get("uploads").toAbsolutePath().normalize();
 
     private final CvUploadRepository cvUploadRepository;
     private final UserRepository userRepository;
@@ -34,16 +39,16 @@ public class CvUploadController {
         this.userRepository = userRepository;
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadCv(@RequestParam("file") MultipartFile file,
-                                           @RequestParam("userId") Long userId) {
+    @PostMapping(value = "/upload")
+    public ResponseEntity<String> uploadCv(@RequestParam("file") MultipartFile file, Authentication authentication) {
 
-        try {
+        String userEmail = authentication.getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new FileStorageException("Kullanıcı bulunamadı."));
             // 10 MB sınırı
             if (file.getSize() > 10 * 1024 * 1024) {
                 throw new RuntimeException("Dosya boyutu 10 MB'tan büyük olamaz.");
             }
-
             // İzin verilen dosya tipleri
             List<String> allowedTypes = List.of(
                     "application/pdf",
@@ -55,10 +60,6 @@ public class CvUploadController {
                 throw new RuntimeException("Sadece PDF veya Word dosyaları yüklenebilir.");
             }
 
-            // Kullanıcı kontrolü
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
-
             // Kullanıcının mevcut CV sayısını kontrol et
             long cvCount = cvUploadRepository.countByUser(user);
             if (cvCount >= 3) {
@@ -66,18 +67,19 @@ public class CvUploadController {
             }
 
             // Benzersiz dosya adı
-            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path filePath = Paths.get(UPLOAD_DIR + fileName);
+            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
+            Path filePath = this.uploadPath.resolve(fileName);
             try {
                 Files.copy(file.getInputStream(), filePath);
             } catch (IOException e) {
                 throw new FileStorageException("Dosya yüklenirken hata oluştu: ", e);
             }
 
-            // Aynı dosya daha önce yüklenmiş mi kontrol et
+            // 3. Dosyanın daha önce yüklenip yüklenmediğini kontrol et
             boolean alreadyExists = cvUploadRepository.existsByUserAndOriginalFileName(user, file.getOriginalFilename());
             if (alreadyExists) {
-                return ResponseEntity.ok("CV başarıyla yüklendi: " + fileName);
+            // Eğer dosya zaten varsa hata fırlat
+            throw new FileValidationException("Aynı isimde bir dosya zaten yüklendi. Lütfen dosya adını değiştirin.");
             }
 
             // CvUpload nesnesi oluştur
@@ -93,38 +95,44 @@ public class CvUploadController {
             cvUploadRepository.save(cvUpload);
 
             return ResponseEntity.ok("CV başarıyla yüklendi: " + fileName);
-        } catch (FileStorageException e) {
-            throw new RuntimeException("Dosya yükleme sırasında hata oluştu.", e);
-        }
+
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<CvUpload>> getUserCvs(@PathVariable Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+    @GetMapping("/user/my-cvs")
+    public ResponseEntity<List<CvUpload>> getUserCvs(Authentication authentication) throws UserNotFoundException {
+        String userEmail = authentication.getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("Kullanıcı bulunamadı."));
 
         List<CvUpload> cvs = cvUploadRepository.findByUser(user);
-
         return ResponseEntity.ok(cvs);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Resource> downloadCv(@PathVariable Long id) {
+    public ResponseEntity<Resource> downloadCv(@PathVariable Long id, Authentication authentication) throws UserNotFoundException {
+        String userEmail = authentication.getName();
+
         CvUpload cvUpload = cvUploadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("CV bulunamadı"));
+                .orElseThrow(() -> new UserNotFoundException("CV bulunamadı."));
+
+        if (!cvUpload.getUser().getEmail().equals(userEmail)) {
+            return ResponseEntity.status(403).build();
+        }
 
         try {
             Path filePath = Paths.get(cvUpload.getFilePath());
-            UrlResource resource = new UrlResource(filePath.toUri());
-            if (resource.exists()) {
-                return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + cvUpload.getOriginalFileName() + "\"")
-                        .body((Resource) resource);
-            } else {
-                return ResponseEntity.notFound().build();
+
+            if (Files.notExists(filePath) || !Files.isReadable(filePath)) {
+                throw new FileStorageException("Dosya bulunamadı veya okunabilir değil.");
             }
+
+            Resource resource = new UrlResource(filePath.toUri());
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + cvUpload.getOriginalFileName() + "\"")
+                    .body(resource);
         } catch (MalformedURLException e) {
-            return ResponseEntity.badRequest().build();
+            throw new FileStorageException("Dosya yolu geçersiz.", e);
         }
     }
 
