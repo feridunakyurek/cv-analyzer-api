@@ -15,17 +15,14 @@ public class Evaluation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String fileName;
-
-    @Column(length = 5000)
-    private String resumeText;
-
     private double score;
 
     @Column(length = 2000)
-    private String aiComment;
+    private String analysisSummary;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+
+    private String evaluationType;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -35,4 +32,8 @@ public class Evaluation {
     @JoinColumn(name = "cv_id", nullable = false)
     private CvUpload cvUpload;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

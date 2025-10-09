@@ -42,8 +42,6 @@ public class UserService implements UserDetailsService {
         );
     }
 
-
-
     public boolean registerUser(@Valid UserRegistrationRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             // Özel exception kullanarak daha iyi hata yönetimi sağlayın

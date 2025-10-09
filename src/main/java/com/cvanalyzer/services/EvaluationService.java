@@ -2,59 +2,62 @@ package com.cvanalyzer.services;
 
 import com.cvanalyzer.entities.CvUpload;
 import com.cvanalyzer.entities.Evaluation;
+import com.cvanalyzer.entities.User;
+import com.cvanalyzer.exceptions.CvNotFoundException;
+import com.cvanalyzer.exceptions.UnauthorizedAccessException;
+import com.cvanalyzer.exceptions.UserNotFoundException;
 import com.cvanalyzer.repos.CvUploadRepository;
 import com.cvanalyzer.repos.EvaluationRepository;
+import com.cvanalyzer.repos.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
+import java.util.Optional;
 
 @Service
 public class EvaluationService {
 
-    private final EvaluationRepository repo;
-
+    private final EvaluationRepository evaluationRepository;
     private final CvUploadRepository cvUploadRepository;
+    private final UserRepository userRepository;
 
-    public EvaluationService(EvaluationRepository repo,  CvUploadRepository cvUploadRepository) {
-        this.repo = repo;
+    public EvaluationService(EvaluationRepository evaluationRepository, CvUploadRepository cvUploadRepository, UserRepository userRepository) {
+        this.evaluationRepository = evaluationRepository;
         this.cvUploadRepository = cvUploadRepository;
+        this.userRepository = userRepository;
     }
 
-    public List<Evaluation> getByUser(Long userId) {
-        return repo.findByUserId(userId);
-    }
+    public Evaluation analyzeCvAndVerifyUser(Long cvId, String userEmail) throws UserNotFoundException {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("Kullanıcı bulunamadı."));
 
-    public Evaluation analyzeCv(Long cvId) throws IOException {
-        // CV'yi getir
-        CvUpload cv = repo.findById(cvId)
-                .orElseThrow(() -> new RuntimeException("CV bulunamadı: " + cvId)).getCvUpload();
+        CvUpload cvUpload = cvUploadRepository.findById(cvId)
+                .orElseThrow(() -> new CvNotFoundException("CV bulunamadı."));
 
-        // CV metnini al (şimdilik resumeText olarak varsayalım)
-        String resumeText = cv.getResumeText();
-        if (resumeText == null || resumeText.isEmpty()) {
-            throw new RuntimeException("CV içeriği boş veya okunamadı.");
+        if (!cvUpload.getUser().getEmail().equals(userEmail)) {
+            throw new UnauthorizedAccessException("Bu CV'yi analiz etme yetkiniz yok.");
         }
 
-        // Basit AI analizi (mock)
-        int wordCount = resumeText.split("\\s+").length;
-        double score = Math.min(100, wordCount / 10.0 + 50);
-        String comment = score > 75
-                ? "Harika bir CV! Deneyimlerin ve becerilerin güçlü görünüyor."
-                : "CV geliştirilebilir. Daha fazla proje ve detay eklemeyi düşün.";
+        Evaluation evaluation = new Evaluation();
+        evaluation.setScore(new Random().nextInt(101)); // Örnek puan (0-100 arası)
+        evaluation.setAnalysisSummary("Bu bir örnek değerlendirme özetidir.");
+        evaluation.setCreatedAt(LocalDateTime.now());
+        evaluation.setEvaluationType("AI_ANALYSIS");
+        evaluation.setCvUpload(cvUpload);
+        evaluation.setUser(user);
 
-        // Evaluation nesnesi oluştur
-        Evaluation eval = new Evaluation();
-        eval.setFileName(cv.getFileName());
-        eval.setResumeText(resumeText);
-        eval.setScore(score);
-        eval.setAiComment(comment);
-        eval.setUser(cv.getUser());
-
-        // Kaydet
-        return repo.save(eval);
+        return evaluationRepository.save(evaluation);
     }
 
+    public List<Evaluation> getByUserEmail(String userEmail) throws UserNotFoundException {
+        // Kullanıcıyı bul
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("Kullanıcı bulunamadı."));
+
+        // Kullanıcının tüm değerlendirmelerini getir
+        return evaluationRepository.findByUser(user);
+    }
 }

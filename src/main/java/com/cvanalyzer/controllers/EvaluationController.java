@@ -1,7 +1,10 @@
 package com.cvanalyzer.controllers;
 
 import com.cvanalyzer.entities.Evaluation;
+import com.cvanalyzer.exceptions.UserNotFoundException;
 import com.cvanalyzer.services.EvaluationService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -19,12 +22,19 @@ public class EvaluationController {
     }
 
     @PostMapping("/analyze/{cvId}")
-    public Evaluation analyzeCv(@PathVariable Long cvId) throws IOException {
-        return service.analyzeCv(cvId);
+    public ResponseEntity<Evaluation> analyzeCv(@PathVariable Long cvId, Authentication authentication) throws UserNotFoundException {
+        String userEmail =  authentication.getName();
+
+        Evaluation evaluation = service.analyzeCvAndVerifyUser(cvId, userEmail);
+        return ResponseEntity.ok(evaluation);
     }
 
     @GetMapping("/{userId}")
-    public List<Evaluation> getUserEvaluations(@PathVariable Long userId) {
-        return service.getByUser(userId);
+    public ResponseEntity<List<Evaluation>> getUserEvaluations(Authentication authentication) throws UserNotFoundException {
+        String  userEmail =  authentication.getName();
+
+        List<Evaluation> evaluations = service.getByUserEmail(userEmail);
+
+        return ResponseEntity.ok(evaluations);
     }
 }
