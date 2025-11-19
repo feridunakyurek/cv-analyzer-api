@@ -9,7 +9,6 @@ import com.cvanalyzer.repos.UserRepository;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +20,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/cv")
@@ -39,15 +37,15 @@ public class CvUploadController {
         this.evaluationRepository = evaluationRepository;
     }
 
-    @PostMapping("api//upload/v1")
+    @PostMapping("/upload")
     public ResponseEntity<String> uploadCv(@RequestParam("file") MultipartFile file, Authentication authentication) throws UserNotFoundException {
 
         String userEmail = authentication.getName();
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("Kullanıcı bulunamadı."));
 
-        if (file.getSize() > 10 * 1024 * 1024) {
-            throw new FileValidationException("Dosya boyutu 10 MB'tan büyük olamaz.");
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new FileValidationException("Dosya boyutu 5 MB'tan büyük olamaz.");
         }
 
         List<String> allowedTypes = List.of(
@@ -64,12 +62,13 @@ public class CvUploadController {
             throw new FileValidationException("Bir kullanıcı en fazla 3 CV yükleyebilir.");
         }
 
-        boolean alreadyExists = cvUploadRepository.existsByUserAndOriginalFileName(user, file.getOriginalFilename());
+        boolean alreadyExists = cvUploadRepository.existsByUserAndFileName(user, file.getOriginalFilename());
         if (alreadyExists) {
             throw new FileValidationException("Aynı isimde bir dosya zaten yüklendi. Lütfen dosya adını değiştirin.");
         }
 
-        String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
+        String fileName = file.getOriginalFilename();
+        assert fileName != null;
         Path filePath = this.uploadPath.resolve(fileName);
 
         try {
@@ -83,7 +82,6 @@ public class CvUploadController {
 
         CvUpload cvUpload = new CvUpload();
         cvUpload.setFileName(fileName);
-        cvUpload.setOriginalFileName(file.getOriginalFilename());
         cvUpload.setFileType(file.getContentType());
         cvUpload.setFilePath(filePath.toString());
         cvUpload.setFileSize(file.getSize());
@@ -126,7 +124,7 @@ public class CvUploadController {
             Resource resource = new UrlResource(filePath.toUri());
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + cvUpload.getOriginalFileName() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + "\"")
                     .body(resource);
         } catch (MalformedURLException e) {
             throw new FileStorageException("Dosya yolu geçersiz.", e);

@@ -107,21 +107,20 @@ public class EvaluationService {
         }
 
         Evaluation evaluation = new Evaluation();
-        evaluation.setScore(score); // Rastgele puan yerine AI'dan gelen puan
-        evaluation.setAnalysisSummary(summary); // Sabit metin yerine AI'dan gelen özet
+        evaluation.setScore(score);
+        evaluation.setAnalysisSummary(summary);
         evaluation.setEvaluationType("AI_ANALYSIS");
         evaluation.setCvUpload(cvUpload);
         evaluation.setUser(user);
+
 
         return evaluationRepository.save(evaluation);
     }
 
     public List<Evaluation> getByUserEmail(String userEmail) throws UserNotFoundException {
-        // Kullanıcıyı bul
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("Kullanıcı bulunamadı."));
 
-        // Kullanıcının tüm değerlendirmelerini getir
         return evaluationRepository.findByUser(user);
     }
 

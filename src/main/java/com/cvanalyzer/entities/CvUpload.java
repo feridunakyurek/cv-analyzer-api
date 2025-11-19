@@ -23,8 +23,6 @@ public class CvUpload {
 
     private String fileName;
 
-    private String originalFileName;
-
     private String fileType;
 
     private String filePath;
@@ -40,6 +38,4 @@ public class CvUpload {
     @OneToMany(mappedBy = "cvUpload", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference
     private List<Evaluation> evaluations;
-
-    public String resumeText;
 }

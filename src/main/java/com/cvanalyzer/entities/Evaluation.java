@@ -31,7 +31,6 @@ public class Evaluation {
 
     @ManyToOne
     @JoinColumn(name = "cv_id", nullable = false)
-    @JsonBackReference
     private CvUpload cvUpload;
 
     @PrePersist

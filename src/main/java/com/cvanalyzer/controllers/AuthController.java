@@ -30,14 +30,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody @Valid UserRegistrationRequest request) {
-        try {
-            userService.registerUser(request);
-            return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 Created
-        } catch (UserAlreadyExistsException ex) {
-            throw ex; // ControllerAdvice'e fırlatır
-        }
+    public ResponseEntity<JwtResponse> register(@RequestBody @Valid UserRegistrationRequest request) {
+
+        JwtResponse response = userService.registerUser(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {

@@ -1,12 +1,15 @@
 package com.cvanalyzer.services;
 
+import com.cvanalyzer.dtos.JwtResponse;
 import com.cvanalyzer.dtos.UserRegistrationRequest;
 import com.cvanalyzer.entities.Role;
 import com.cvanalyzer.entities.User;
 import com.cvanalyzer.exceptions.UserAlreadyExistsException;
 import com.cvanalyzer.repos.UserRepository;
+import com.cvanalyzer.security.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,9 +26,12 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder) {
+    private final JwtUtil jwtUtil;
+
+    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
@@ -42,23 +48,24 @@ public class UserService implements UserDetailsService {
         );
     }
 
-    public boolean registerUser(@Valid UserRegistrationRequest request) {
+    public JwtResponse registerUser(@Valid UserRegistrationRequest request) {
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            // Özel exception kullanarak daha iyi hata yönetimi sağlayın
             throw new UserAlreadyExistsException("Email already exists!");
         }
 
         User newUser = new User();
-
+        newUser.setName(request.getName());
+        newUser.setSurname(request.getSurname());
         newUser.setEmail(request.getEmail());
-
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-
         newUser.setRole(Role.USER);
 
         userRepository.save(newUser);
 
-        return true;
+        String token = jwtUtil.generateToken(newUser.getEmail(), newUser.getRole().name());
+
+        return new JwtResponse(token);
     }
 
     public User registerAdmin(User user) {

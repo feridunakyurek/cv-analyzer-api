@@ -11,5 +11,5 @@ public interface CvUploadRepository extends JpaRepository<CvUpload, Long> {
 
     long countByUser(User user);
 
-    boolean existsByUserAndOriginalFileName(User user, String originalFilename);
+    boolean existsByUserAndFileName(User user, String Filename);
 }

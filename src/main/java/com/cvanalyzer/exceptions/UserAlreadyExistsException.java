@@ -6,6 +6,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class UserAlreadyExistsException extends RuntimeException {
     public UserAlreadyExistsException(String message) {
-        super(message);
+        super("Bu Email Zaten Kayıtlı.");
     }
 }
