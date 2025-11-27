@@ -2,6 +2,7 @@ package com.cvanalyzer.controllers;
 
 import com.cvanalyzer.dtos.AuthRequest;
 import com.cvanalyzer.dtos.JwtResponse;
+import com.cvanalyzer.dtos.ResetPasswordRequest;
 import com.cvanalyzer.dtos.UserRegistrationRequest;
 import com.cvanalyzer.entities.User;
 import com.cvanalyzer.exceptions.UserAlreadyExistsException;
@@ -60,6 +61,11 @@ public class AuthController {
 
         String token = jwtUtil.generateToken(user.getEmail(), String.valueOf(user.getRole()));
         return ResponseEntity.ok(new JwtResponse(token));
+    }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok("Şifreniz başarıyla Değiştirildi.");
     }
 }

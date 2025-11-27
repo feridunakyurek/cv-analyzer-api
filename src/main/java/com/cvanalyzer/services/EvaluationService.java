@@ -12,6 +12,7 @@ import com.cvanalyzer.repos.EvaluationRepository;
 import com.cvanalyzer.repos.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.ai.chat.client.ChatClient;
 import org.apache.tika.exception.TikaException;
@@ -136,5 +137,19 @@ public class EvaluationService {
         } catch (TikaException | SAXException e) {
             throw new IOException("Dosya içeriği okunurken bir hata oluştu.", e);
         }
+    }
+
+    public Evaluation getEvaluationByCvId(Long cvId) {
+        return evaluationRepository.findByCvUpload_Id(cvId)
+                .orElseThrow(()-> new RuntimeException("Bu CV için analiz bulunamadı."));
+    }
+
+    @Transactional
+    public void deleteEvaluation(Long cvId) {
+
+        CvUpload cv = cvUploadRepository.findById(cvId)
+                .orElseThrow(() -> new CvNotFoundException("CV kaydı bulunamadı. ID: " + cvId));
+
+        evaluationRepository.deleteByCvUpload(cv);
     }
 }

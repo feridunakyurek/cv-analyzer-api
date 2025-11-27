@@ -9,14 +9,15 @@ import com.cvanalyzer.repos.UserRepository;
 import com.cvanalyzer.security.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.View;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -27,11 +28,13 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     private final JwtUtil jwtUtil;
+    private final View error;
 
-    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, JwtUtil jwtUtil, View error) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.error = error;
     }
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
@@ -67,6 +70,23 @@ public class UserService implements UserDetailsService {
 
         return new JwtResponse(token);
     }
+
+    public void resetPassword (String token, String newPassword) {
+        User user = userRepository.findByToken(token)
+                .orElseThrow(()-> new RuntimeException("Geçersiz Token"));
+
+        if (user.getTokenExpiryDate().isBefore(LocalDateTime.now())){
+            throw new RuntimeException("Tekrar Deneyiniz.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        user.setToken(null);
+        user.setTokenExpiryDate(null);
+
+        userRepository.save(user);
+    }
+
 
     public User registerAdmin(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));

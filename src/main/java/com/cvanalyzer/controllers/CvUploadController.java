@@ -38,7 +38,7 @@ public class CvUploadController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadCv(@RequestParam("file") MultipartFile file, Authentication authentication) throws UserNotFoundException {
+    public ResponseEntity<CvUpload> uploadCv(@RequestParam("file") MultipartFile file, Authentication authentication) throws UserNotFoundException {
 
         String userEmail = authentication.getName();
         User user = userRepository.findByEmail(userEmail)
@@ -90,7 +90,7 @@ public class CvUploadController {
 
         cvUploadRepository.save(cvUpload);
 
-        return ResponseEntity.ok("CV başarıyla yüklendi: " + fileName);
+        return ResponseEntity.ok(cvUpload);
     }
 
     @GetMapping("/user/my-cvs")

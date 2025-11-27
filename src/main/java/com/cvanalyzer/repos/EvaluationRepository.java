@@ -11,6 +11,8 @@ public interface EvaluationRepository extends JpaRepository<Evaluation, Long> {
     List<Evaluation> findByUser(User user);
 
     List<Evaluation> findByUserId(Long userId);
+
+    Optional<Evaluation> findByCvUpload_Id(Long cvUpload);
     void deleteByCvUpload(CvUpload cvUpload);
 
     Optional<Evaluation> findByCvUpload(CvUpload cvUpload);

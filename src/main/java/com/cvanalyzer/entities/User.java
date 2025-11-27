@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -25,6 +27,10 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    private String token;
+
+    private LocalDateTime tokenExpiryDate;
 
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER; // varsayılan olarak USER atanır

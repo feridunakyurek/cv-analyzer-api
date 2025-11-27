@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/evaluations")
-@CrossOrigin(origins = "http://localhost:3000")
 public class EvaluationController {
 
     private final EvaluationService service;
@@ -36,5 +36,22 @@ public class EvaluationController {
         List<Evaluation> evaluations = service.getByUserEmail(userEmail);
 
         return ResponseEntity.ok(evaluations);
+    }
+
+    @GetMapping("/analyze/{cvId}")
+    public ResponseEntity<?> getEvaluationByCv(@PathVariable Long cvId) {
+        Evaluation evaluation = service.getEvaluationByCvId(cvId);
+        if (evaluation == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(evaluation);
+    }
+
+    @DeleteMapping("/delete/{cvId}")
+    public ResponseEntity<Void> deleteCv(@PathVariable Long cvId) {
+
+        service.deleteEvaluation(cvId);
+
+        return ResponseEntity.noContent().build();
     }
 }
