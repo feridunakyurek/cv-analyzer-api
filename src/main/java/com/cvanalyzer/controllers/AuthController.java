@@ -2,9 +2,6 @@ package com.cvanalyzer.controllers;
 
 import com.cvanalyzer.dtos.*;
 import com.cvanalyzer.entities.User;
-import com.cvanalyzer.exceptions.UserAlreadyExistsException;
-import com.cvanalyzer.exceptions.UserNotFoundException;
-import com.cvanalyzer.repos.UserRepository;
 import com.cvanalyzer.security.JwtUtil;
 import com.cvanalyzer.services.UserService;
 import jakarta.validation.Valid;

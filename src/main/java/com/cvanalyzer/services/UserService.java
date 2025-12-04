@@ -5,7 +5,6 @@ import com.cvanalyzer.dtos.UserRegistrationRequest;
 import com.cvanalyzer.entities.Role;
 import com.cvanalyzer.entities.User;
 import com.cvanalyzer.exceptions.UserAlreadyExistsException;
-import com.cvanalyzer.repos.EvaluationRepository;
 import com.cvanalyzer.repos.UserRepository;
 import com.cvanalyzer.security.JwtUtil;
 import jakarta.transaction.Transactional;
@@ -17,9 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.View;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -31,7 +28,7 @@ public class UserService implements UserDetailsService {
 
     private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, JwtUtil jwtUtil, View error) {
+    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
