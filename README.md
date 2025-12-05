@@ -45,7 +45,7 @@ Varsayılan ayarlar aşağıdadır. Kendi veritabanı şifrenize göre güncelle
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/cv-evaluation
 spring.datasource.username=root
-spring.datasource.password=12345
+spring.datasource.password=password
 spring.jpa.hibernate.ddl-auto=update
 spring.servlet.multipart.max-file-size=5MB
 ```
