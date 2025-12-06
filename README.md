@@ -25,7 +25,7 @@ CREATE DATABASE `cv-evaluation`;
 *Tablolar uygulama ilk açıldığında Hibernate tarafından otomatik oluşturulacaktır*
 
 ## 2.Ortam Değişkenleri (Environment Variables) ⚠️
-Güvenlik nedeniyle API anahtarı kod içerisine gömülmemiştir. Projeyi çalıştırmadan önce GEMINI_API_KEY tanımlanmalıdır.
+Güvenlik nedeniyle API anahtarları kod içerisine gömülmemiştir. Projeyi çalıştırmadan önce GEMINI_API_KEY ve JwtToken tanımlanmalıdır.
 
 **IntelliJ IDEA Kullanıyorsanız:**
 * Run/Debug Configurations menüsünü açın.
@@ -34,12 +34,27 @@ Güvenlik nedeniyle API anahtarı kod içerisine gömülmemiştir. Projeyi çal�
 **Terminalde Çalıştırıyorsanız:**
 * Mac/Linux
 ```bash
-export GEMINI_API_KEY=senin_keyin
+export GEMINI_API_KEY=API_KEY
 ```
 * Windows (CMD)
 ```bash
-set GEMINI_API_KEY=senin_keyin
+set GEMINI_API_KEY=API_KEY
 ```
+
+**IntelliJ IDEA Kullanıyorsanız:**
+* Run/Debug Configurations menüsünü açın.
+* Environment variables alanına şunu ekleyin: JwtToken=*API_KEY*
+ 
+**Terminalde Çalıştırıyorsanız:**
+* Mac/Linux
+```bash
+export JwtToken=API_KEY
+```
+* Windows (CMD)
+```bash
+set JwtToken=API_KEY
+```
+
 ## 3.application.properties Kontrolü
 Varsayılan ayarlar aşağıdadır. Kendi veritabanı şifrenize göre güncelleyebilirsiniz:
 ```properties
