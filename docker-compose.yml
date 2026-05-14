@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cv-analyzer-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: cv-evaluation
+    ports:
+      - "3307:3306" # Local 3306 dolu olabilir, çakışmasın diye 3307
+    volumes:
+      - mysql_data:/var/lib/mysql # Container silinse bile veriler korunur
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  api:
+    build: . # Bu klasördeki Dockerfile'ı kullan
+    container_name: cv-analyzer-api
+    ports:
+      - "8080:8080"
+    environment:
+      JwtToken: ${JwtToken}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cv-evaluation?createDatabaseIfNotExist=true # "mysql" → container adı, Docker DNS çözümler
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    volumes:
+      - uploads_data:/app/uploads # Yüklenen CV dosyaları kalıcı saklansın
+    depends_on:
+      mysql:
+        condition: service_healthy # MySQL hazır olmadan API başlamasın
+
+volumes:
+  mysql_data:
+  uploads_data:
